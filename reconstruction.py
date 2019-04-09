@@ -8,36 +8,37 @@ import datetime
 import sys
 
 
-alpha = 10
-beta = 5
-overlap_tolerance = 0.05
-match_len_tolerance = 0.05
-mini_angle = 5
-center_dist_bound = 10
-closeness_bound_for_center_dist = 1
-closeness_bound_for_perp_dist = 0.1
+ALPHA = 10
+BETA = 5
+OVERLAP_TOLERANCE_IN_MATCH = 0.05
+# below are to be done
+MATCH_LEN_TOLERANCE = 0.05
+MINI_ANGLE = 5
+# CENTER_DIST_BOUND = 10
+CLOSENESS_BOUND_FOR_CENTER_DIST = 1
+CLOSENESS_BOUND_FOR_PERP_DIST = 0.1
 FLIP_ALLOWED_MODE = False
 BACKGROUND_IS_BLACK = True
 BACKGROUND_IS_WHITE = False
 SINGLE_FRAGMENT_NAME_PREFIX = "transparent_backgound_fragment"
 
 # for simple shapes
-# input_fragment_file_name = "shapes_and_colors.jpg"
-# interesting_area_lower_bound = 2500
-# interesting_area_upper_bound = 20000000
-# dp_approx_precision = 0.01
+# INPUT_FRAGMENT_FILE_NAME = "shapes_and_colors.jpg"
+# INTERESTING_AREA_LOWER_BOUND = 2500
+# INTERESTING_AREA_UPPER_BOUND = 20000000
+# DP_APPROX_PRECISION = 0.01
 
 # for letter
-input_fragment_file_name = "letter.tif"
-interesting_area_lower_bound = 100000
-interesting_area_upper_bound = 20000000
-dp_approx_precision = 0.005
+INPUT_FRAGMENT_FILE_NAME = "letter.tif"
+INTERESTING_AREA_LOWER_BOUND = 100000
+INTERESTING_AREA_UPPER_BOUND = 20000000
+DP_APPROX_PRECISION = 0.005
 
 # for map
-# input_fragment_file_name = "map_2_fragment.tif"
-# interesting_area_lower_bound = 25000
-# interesting_area_upper_bound = 20000000
-# dp_approx_precision = 0.002
+# INPUT_FRAGMENT_FILE_NAME = "map_2_fragment.tif"
+# INTERESTING_AREA_LOWER_BOUND = 25000
+# INTERESTING_AREA_UPPER_BOUND = 20000000
+# DP_APPROX_PRECISION = 0.002
 
 cnts = list()
 approx_cnts = list()
@@ -73,6 +74,25 @@ def enlarged_by_a_factor(binary, mul):
 
 
 def initialize_approx_cnts(img):
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     if FLIP_ALLOWED_MODE:
         image_containing_flipped_shape = np.zeros(enlarged_by_a_factor(img.shape[0:2], 1))
 
@@ -96,7 +116,7 @@ def initialize_approx_cnts(img):
     temp_cnts = imutils.grab_contours(temp_cnts)
 
     for i in range(len(temp_cnts)):
-        if interesting_area_lower_bound <= cv2.contourArea(temp_cnts[i]) < interesting_area_upper_bound:  # for map
+        if INTERESTING_AREA_LOWER_BOUND <= cv2.contourArea(temp_cnts[i]) < INTERESTING_AREA_UPPER_BOUND:  # for map
             cnts.append(temp_cnts[i])
 
     print("cnt_num: %d" % len(cnts))
@@ -127,7 +147,7 @@ def initialize_approx_cnts(img):
             else:
                 flipped_fragment_barycenter_list.append((None, None))
 
-        dp_epsilon = dp_approx_precision * cv2.arcLength(c, True)  # for book, for letter
+        dp_epsilon = DP_APPROX_PRECISION * cv2.arcLength(c, True)  # for book, for letter
 
         approx_c = cv2.approxPolyDP(c, dp_epsilon, True)  # apply DP Algorithm to cluster the boundary points
 
@@ -220,18 +240,37 @@ def initialize_approx_cnts(img):
     print("barycenter_and_x_to_angle_dict:\n", barycenter_and_x_to_angle_dict)
 
     # print("about to show and write image")
-    cv2.imshow("Approx Image", img)
+    # cv2.imshow("Approx Image", img)
     cv2.imwrite("Approx input_image.jpg", img)
 
     if FLIP_ALLOWED_MODE:
-        cv2.imshow("Flipped Image", image_containing_flipped_shape)
+        # cv2.imshow("Flipped Image", image_containing_flipped_shape)
         cv2.imwrite("Flipped input_image.jpg", image_containing_flipped_shape)
 
-    cv2.waitKey()
+    # cv2.waitKey()
 
 
 def obtain_perimeter_and_original_and_flipped_barycenter_x_to_angle_info(cnt_list):
     # just the properties of a single segment cluster
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     if id(cnt_list) == id(approx_cnts):
         tag_str = "approx_cnts"
         flipped_tag_str = "flipped_approx_cnts"
@@ -289,6 +328,25 @@ def len_close(l1, l2, error_rate):
 
 
 def segment_close(curve_segment_1, curve_segment_2, closeness_bound):
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     x11 = curve_segment_1[0][0][0]
     y11 = curve_segment_1[0][0][1]
     x12 = curve_segment_1[1][0][0]
@@ -310,8 +368,8 @@ def segment_close(curve_segment_1, curve_segment_2, closeness_bound):
     center_dist = euclidean_distance(center_1[0], center_1[1], center_2[0], center_2[1])
     print("center_dist: ", round(center_dist))
 
-    if center_dist < closeness_bound_for_center_dist * dist_1 / 2 and center_dist < closeness_bound_for_center_dist * dist_2 / 2:
-        # if center_dist < center_dist_bound:
+    if center_dist < CLOSENESS_BOUND_FOR_CENTER_DIST * dist_1 / 2 and center_dist < CLOSENESS_BOUND_FOR_CENTER_DIST * dist_2 / 2:
+        # if center_dist < CENTER_DIST_BOUND:
         return True
 
     print("perpendicular distances:")
@@ -319,11 +377,11 @@ def segment_close(curve_segment_1, curve_segment_2, closeness_bound):
     print(round(perpendicular_distance_between_point_to_two_point_line(center_2, (x11, y11), (x12, y12))))
 
     if perpendicular_distance_between_point_to_two_point_line(
-            center_1, (x21, y21), (x22, y22)) < closeness_bound_for_perp_dist * dist_1 / 2:
+            center_1, (x21, y21), (x22, y22)) < CLOSENESS_BOUND_FOR_PERP_DIST * dist_1 / 2:
         return True
 
     if perpendicular_distance_between_point_to_two_point_line(
-            center_2, (x11, y11), (x12, y12)) < closeness_bound_for_perp_dist * dist_2 / 2:
+            center_2, (x11, y11), (x12, y12)) < CLOSENESS_BOUND_FOR_PERP_DIST * dist_2 / 2:
         return True
 
     return False
@@ -422,6 +480,25 @@ def perpendicular_distance_between_point_to_two_point_line(p, p1, p2):
 
 
 def fitness_of_a_match(cnt1, cnt2, tag_str_i, tag_str_j, i, j):
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     len_of_match_seg = 0
     match_segment_set_ik = set()
     match_segment_set_jl = set()
@@ -447,7 +524,7 @@ def fitness_of_a_match(cnt1, cnt2, tag_str_i, tag_str_j, i, j):
 
             print("for k = %d and l = %d" % (k, l))
 
-            close_to_each_other = segment_close(curve_segment_ik, curve_segment_jl, closeness_bound_for_center_dist)
+            close_to_each_other = segment_close(curve_segment_ik, curve_segment_jl, CLOSENESS_BOUND_FOR_CENTER_DIST)
 
             x11 = curve_segment_ik[0][0][0]
             y11 = curve_segment_ik[0][0][1]
@@ -472,7 +549,7 @@ def fitness_of_a_match(cnt1, cnt2, tag_str_i, tag_str_j, i, j):
             else:
                 None
 
-            if mini_angle <= inner_ang <= 180 - mini_angle:  # angle difference tolerance < 5 degrees
+            if MINI_ANGLE <= inner_ang <= 180 - MINI_ANGLE:  # angle difference tolerance < 5 degrees
                 continue
 
             match_segment_set_ik.add(k)
@@ -481,7 +558,7 @@ def fitness_of_a_match(cnt1, cnt2, tag_str_i, tag_str_j, i, j):
             map_to_vector[(j, l)] = curve_segment_jl
             print("having collected a map from (%d, %d) to " % (i, k), curve_segment_ik)
             print("having collected a map from (%d, %d) to " % (j, l), curve_segment_jl)
-            # cv2.waitKey(0)
+            # # cv2.waitKey(0)
 
             perimeter_ik = euclidean_distance(x11, y11, x12, y12)
             perimeter_jl = euclidean_distance(x21, y21, x22, y22)
@@ -519,7 +596,7 @@ def fitness_of_a_match(cnt1, cnt2, tag_str_i, tag_str_j, i, j):
             theta = vector_inner_angle(v, v_)
             print("vector inner angle: ", theta)
             match_angle_list_ik.append(theta)
-            # cv2.waitKey(0)
+            # # cv2.waitKey(0)
 
     if len(match_segment_set_jl) >= 2:
         match_segment_list_jl = sorted(match_segment_set_jl)
@@ -540,7 +617,7 @@ def fitness_of_a_match(cnt1, cnt2, tag_str_i, tag_str_j, i, j):
             theta = vector_inner_angle(v, v_)
             print("vector inner angle: ", theta)
             match_angle_list_jl.append(theta)
-            # cv2.waitKey(0)
+            # # cv2.waitKey(0)
 
     print("having collected vector inner angles as follows")
     print(match_angle_list_ik)
@@ -551,13 +628,13 @@ def fitness_of_a_match(cnt1, cnt2, tag_str_i, tag_str_j, i, j):
     if not match_angle_list_jl:
         match_angle_list_jl= [0]
     rotate_extend = round(sum(match_angle_list_ik) + sum(match_angle_list_jl))
-    print("num_of_match_seg_part: %d" % (alpha * num_of_match_seg))
-    print("rotate_extend_part: %d" % (beta * rotate_extend))
+    print("num_of_match_seg_part: %d" % (ALPHA * num_of_match_seg))
+    print("rotate_extend_part: %d" % (BETA * rotate_extend))
     print("len_of_match_seg_part: %d" % round(len_of_match_seg))
-    # cv2.waitKey(0)
-    match_fitness = num_of_match_seg * alpha + round(len_of_match_seg) + beta * rotate_extend
+    # # cv2.waitKey(0)
+    match_fitness = num_of_match_seg * ALPHA + round(len_of_match_seg) + BETA * rotate_extend
     print("total fitness: %d" % match_fitness)
-    # cv2.waitKey(0)
+    # # cv2.waitKey(0)
 
     return match_fitness
 
@@ -580,6 +657,25 @@ def create_or_clear_one_folder(folder_name):
 
 
 def geometric_relation_info(m, n):
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     print("perimeter info:")
     print(perimeter_list[m])
     print(perimeter_list[n])
@@ -614,6 +710,9 @@ def geometric_relation_info(m, n):
 
 
 def str_list_name(lst_name):
+    global approx_cnts
+    global flipped_approx_cnts
+
     if id(lst_name) == id(approx_cnts):
         return "approx_cnts"
     elif id(lst_name) == id(flipped_approx_cnts):
@@ -621,6 +720,9 @@ def str_list_name(lst_name):
 
 
 def flipped_str_list_name(lst_name):
+    global approx_cnts
+    global flipped_approx_cnts
+
     if id(lst_name) == id(approx_cnts):
         return "flipped_approx_cnts"
     elif id(lst_name) == id(flipped_approx_cnts):
@@ -628,6 +730,9 @@ def flipped_str_list_name(lst_name):
 
 
 def list_name_from_str(str_name):
+    global approx_cnts
+    global flipped_approx_cnts
+
     if str_name == "approx_cnts":
         return approx_cnts
     elif str_name == "flipped_approx_cnts":
@@ -639,6 +744,25 @@ def cut_tail(s):
 
 
 def compute_compatible_matches(m, n, overlap_tolerance, img, compatibleDirName):
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     print("dealing with the %d-th and the %d-th tuples of %d tuples" % (m, n, len(perimeter_list)))
 
     # if perimeter_list[m][1] == perimeter_list[n][1]:
@@ -745,7 +869,7 @@ def compute_compatible_matches(m, n, overlap_tolerance, img, compatibleDirName):
 
     # test overlap
     print("about to check translated and rotated curve 1")
-    if contour_area_overlapped(lst_name_j[j], rotated_approx_c_11, image, overlap_tolerance):
+    if contour_area_overlapped(lst_name_j[j], rotated_approx_c_11, img, overlap_tolerance):
         print("***curve 1 fail in the overlap test***")
     else:
         match_fitness_1 = fitness_of_a_match(rotated_approx_c_11, lst_name_j[j], tag_str_i, tag_str_j, i, j)
@@ -796,16 +920,16 @@ def compute_compatible_matches(m, n, overlap_tolerance, img, compatibleDirName):
             match_fitness_1) + "_1.jpg"
 
         # if k == 7 and l == 2:
-        #     cv2.imshow(display_window_name_1, blank_image_1)
-        #     cv2.waitKey(0)
+        #     # cv2.imshow(display_window_name_1, blank_image_1)
+        #     # cv2.waitKey(0)
 
         cv2.imwrite("./" + compatibleDirName + "/" + output_file_name_1, blank_image_1)
-        # cv2.waitKey(0)
+        # # cv2.waitKey(0)
         # cv2.destroyWindow(display_window_name_1)
 
     # test overlap
     print("about to check translated and rotated curve 2")
-    if contour_area_overlapped(lst_name_j[j], rotated_approx_c_12, image, overlap_tolerance):
+    if contour_area_overlapped(lst_name_j[j], rotated_approx_c_12, img, overlap_tolerance):
         print("***curve 2 fail in the overlap test***")
     else:
         match_fitness_2 = fitness_of_a_match(rotated_approx_c_12, lst_name_j[j], tag_str_i, tag_str_j, i, j)
@@ -856,9 +980,9 @@ def compute_compatible_matches(m, n, overlap_tolerance, img, compatibleDirName):
             lst_name_j) + "-" + str(j) + "-" + str(l) + \
                              "-sum_fitness-" + str(match_fitness_2) + "_2.jpg"
 
-        # cv2.imshow(display_window_name_2, blank_image_2)
+        # # cv2.imshow(display_window_name_2, blank_image_2)
         cv2.imwrite("./" + compatibleDirName + "/" + output_file_name_2, blank_image_2)
-        # cv2.waitKey(0)
+        # # cv2.waitKey(0)
         # cv2.destroyWindow(display_window_name_2)
 
         # tested_case_set.add((str_list_name(lst_name_i), str_list_name(lst_name_j), i, j, k, l))
@@ -868,11 +992,30 @@ def compute_compatible_matches(m, n, overlap_tolerance, img, compatibleDirName):
 
     # print("inner angle: ", ang)
     print("to angle: %d and %d" % (to_ang, to_ang + 180))
-    # cv2.waitKey(0)
+    # # cv2.waitKey(0)
     # cv2.destroyWindow(display_window_name)
 
 
 def match_clusters(overlap_tolerance, img):
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     compatibleDirName = "compatible-matches"
     create_or_clear_one_folder(compatibleDirName)
 
@@ -887,7 +1030,7 @@ def match_clusters(overlap_tolerance, img):
             perimeter_j = perimeter_list[n][-1]
             print("*******to deal with %d-th and %d-th of the total %d tuples*******" % (m, n, len(perimeter_list)))
             print("for " + str(perimeter_list[m]) + " and " + str(perimeter_list[n]) + ",")
-            if (perimeter_j - perimeter_i) / perimeter_i > match_len_tolerance:
+            if (perimeter_j - perimeter_i) / perimeter_i > MATCH_LEN_TOLERANCE:
                 print("\tlens: %.2f and %.2f, the diff is too large, the first index (%d) should be increased" % (
                     perimeter_i, perimeter_j, m))
                 break
@@ -899,6 +1042,25 @@ def match_clusters(overlap_tolerance, img):
 
 
 def remove_twin_match(i, j, match, match_list):
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     for m in range(len(match_list[j][i])):
         match_ = match_list[j][i][m]
         if match[0] == match_[1] and match[1] == match_[0] and \
@@ -910,6 +1072,25 @@ def remove_twin_match(i, j, match, match_list):
 
 
 def select_a_match_with_the_greatest_fitness(match_list, matched_fragment_list):
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     bst_match_fitness = -1
     bst_match = []
     bst_i = -1
@@ -938,6 +1119,25 @@ def select_a_match_with_the_greatest_fitness(match_list, matched_fragment_list):
 
 
 def select_a_match_involving_some_fragments_with_the_greatest_fitness(match_list, matched_fragment_list):
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     bst_match_fitness = -1
     bst_match = []
     bst_i = -1
@@ -973,7 +1173,7 @@ def select_a_match_involving_some_fragments_with_the_greatest_fitness(match_list
 
                     remove_twin_match(i, matched_fragment_id, match, match_list)
 
-                    # cv2.waitKey(0)
+                    # # cv2.waitKey(0)
                     continue
 
                 if match_list[i][matched_fragment_id][m][1] == "approx_cnts" and fragment_flipped[
@@ -985,7 +1185,7 @@ def select_a_match_involving_some_fragments_with_the_greatest_fitness(match_list
                     print("having collected this match successfully")
                     remove_twin_match(i, matched_fragment_id, match, match_list)
 
-                    # cv2.waitKey(0)
+                    # # cv2.waitKey(0)
                     continue
 
                 print("pass flip tests")
@@ -1033,7 +1233,7 @@ def select_a_match_involving_some_fragments_with_the_greatest_fitness(match_list
                     print("having collected this match successfully")
                     remove_twin_match(matched_fragment_id, j, match, match_list)
 
-                    # cv2.waitKey(0)
+                    # # cv2.waitKey(0)
                     continue
 
                 if match_list[matched_fragment_id][j][m][0] == "approx_cnts" and fragment_flipped[
@@ -1045,7 +1245,7 @@ def select_a_match_involving_some_fragments_with_the_greatest_fitness(match_list
                     print("having collected this match successfully")
                     remove_twin_match(matched_fragment_id, j, match, match_list)
 
-                    # cv2.waitKey(0)
+                    # # cv2.waitKey(0)
                     continue
 
                 print("pass flip tests")
@@ -1076,6 +1276,24 @@ def select_a_match_involving_some_fragments_with_the_greatest_fitness(match_list
 
 def extend_partial_picture_with_one_match(i, j, match, img, epsilon):
     # precondition: i < j
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
 
     if i == -1 or j == -1:
         return False
@@ -1146,6 +1364,25 @@ def extend_partial_picture_with_one_match(i, j, match, img, epsilon):
 
 
 def contour_in_partial_picture(index, flipped):
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     transformation_list = partial_picture[index]
 
     if not flipped[index]:
@@ -1164,6 +1401,25 @@ def contour_in_partial_picture(index, flipped):
 
 
 def match_causes_overlap(index, matched_fragment_list, img, epsilon):
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
+
     print("checking overlap for %d..." % index)
     print("matched_fragment_list: \n", matched_fragment_list)
     current_fragment_contour = contour_in_partial_picture(index, fragment_flipped)
@@ -1185,6 +1441,23 @@ def match_causes_overlap(index, matched_fragment_list, img, epsilon):
 
 def draw_final_image_list(p_picture, final_image_lst, flipped, img, pileDirName):
     global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
 
     print("just enterd draw_final_image_list, cnt_num: ", len(cnts))
     print("in draw_final_image_list, p_picture: ")
@@ -1258,10 +1531,10 @@ def draw_final_image_list(p_picture, final_image_lst, flipped, img, pileDirName)
 
         print("having iterated the curves")
         display_window_name = "matched_fragment_pile_" + str(k + 1)
-        # cv2.imshow(display_window_name, blank_image)
+        # # cv2.imshow(display_window_name, blank_image)
         # cv2.imwrite(display_window_name + ".jpg", blank_image)
         cv2.imwrite(pileDirName + "/" + display_window_name + ".jpg", blank_image)
-        # cv2.waitKey(0)
+        # # cv2.waitKey(0)
 
 
 def element_in_two_level_list(e, two_level_lst):
@@ -1271,9 +1544,29 @@ def element_in_two_level_list(e, two_level_lst):
     return False
 
 
-if __name__ == "__main__":
+def reconstruct(img):
+# if __name__ == "__main__":
+    global cnts
+    global approx_cnts
+    global flipped_approx_cnts
+    global flipped_cnts
+    global top_left_point_list
+    global compatible_match_list
+    global partial_picture
+    global partial_picture_for_movement
+    global first_placed_fragment_id
+    global matched_fragments
+    global current_matched_fragment_pile
+    global fragment_flipped
+    global map_to_perimeter
+    global perimeter_list
+    global barycenter_and_x_to_angle_dict
+    global fragment_barycenter_list
+    global flipped_fragment_barycenter_list
+    global tested_case_set
 
-    image = cv2.imread(input_fragment_file_name)
+    image = cv2.imread(img)
+    # image = cv2.imread(INPUT_FRAGMENT_FILE_NAME)
 
     print("having just read an image")
 
@@ -1281,9 +1574,9 @@ if __name__ == "__main__":
 
     print("in main function, just after initialization, cnt_num: ", len(cnts))
 
-    cv2.waitKey(0)
+    # cv2.waitKey(0)
 
-    match_clusters(overlap_tolerance, image)
+    match_clusters(OVERLAP_TOLERANCE_IN_MATCH, image)
 
     for i in range(len(approx_cnts)):
         partial_picture.append([])
@@ -1328,7 +1621,7 @@ if __name__ == "__main__":
 
     print("best_match_for_growing: <%d, %d>\n" % (best_i, best_j), best_match)
 
-    cv2.waitKey(0)
+    # cv2.waitKey(0)
 
     final_image_list = []
 
@@ -1338,7 +1631,7 @@ if __name__ == "__main__":
 
         # keep selecting a match with the greatest fitness until extension is done, or no compatible matches exist
         # during this procedure, unsuitable matches will be deleted:
-        while not extend_partial_picture_with_one_match(best_i, best_j, best_match, image, overlap_tolerance):
+        while not extend_partial_picture_with_one_match(best_i, best_j, best_match, image, OVERLAP_TOLERANCE_IN_MATCH):
 
             if best_i != -1 and best_j != -1:
 
@@ -1351,7 +1644,7 @@ if __name__ == "__main__":
                 compatible_match_list[best_i][best_j].remove(best_match)
                 print("match_num: ", len(compatible_match_list[best_j][best_i]))
                 print(compatible_match_list[best_j][best_i])
-                # cv2.waitKey(0)
+                # # cv2.waitKey(0)
                 for m in range(len(compatible_match_list[best_j][best_i])):
                     print("m: ", m)
                     print("in the for loop, match_num: ", len(compatible_match_list[best_j][best_i]))
@@ -1364,13 +1657,13 @@ if __name__ == "__main__":
                         print("having found inverse transformation and will remove")
                         compatible_match_list[best_j][best_i].remove(compatible_match_list[best_j][best_i][m])
                         break
-                # cv2.waitKey(0)
+                # # cv2.waitKey(0)
             # select another greedy match
             best_i, best_j, best_match = select_a_match_involving_some_fragments_with_the_greatest_fitness(
                 compatible_match_list, current_matched_fragment_pile)  # growing
-            # cv2.waitKey(0)
+            # # cv2.waitKey(0)
             print("having obtained %d and %d for attempting" % (best_i, best_j), best_match)
-            # cv2.waitKey(0)
+            # # cv2.waitKey(0)
 
             # if fail to select such a match
             if best_i == -1:
@@ -1388,7 +1681,7 @@ if __name__ == "__main__":
             compatible_match_list[best_i][best_j] = []
             compatible_match_list[best_j][best_i] = []
             print("having deleted the qualified pair <%d, %d> from cand match database" % (best_i, best_j), best_match)
-            # cv2.waitKey(0)
+            # # cv2.waitKey(0)
             best_i, best_j, best_match = select_a_match_involving_some_fragments_with_the_greatest_fitness(
                 compatible_match_list, current_matched_fragment_pile)
 
@@ -1449,12 +1742,10 @@ if __name__ == "__main__":
     print("end of the program, final_image_list: \n", final_image_list)
     # draw_partial_picture_in_one_image(partial_picture, image)
     # print("matched_fragment_list:\n", matched_fragments)
-    # cv2.waitKey(0)
+    # # cv2.waitKey(0)
     pileDirName = "pile-matches"
     create_or_clear_one_folder(pileDirName)
 
     draw_final_image_list(partial_picture, final_image_list, fragment_flipped, image, pileDirName)
     print("final-image-list:\n", final_image_list)
     print("fragment flipped:\n", fragment_flipped)
-
-
